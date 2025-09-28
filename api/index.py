@@ -10,7 +10,7 @@ import traceback
 # from PIL import Image, ImageDraw # If doing manga server-side
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app, origins=["*"], methods=["GET", "POST", "OPTIONS"], allow_headers=["Content-Type", "Authorization"])  # Enable CORS for all routes
 
 # --- Constants (Remove Pygame colors/fonts) ---
 POLLINATIONS_BASE_URL = "https://image.pollinations.ai/prompt/"
@@ -529,11 +529,34 @@ def serve_index():
         return send_from_directory('../public', 'index.html')
     except Exception as e:
         print(f"Error serving index: {str(e)}")
-        return f"Error serving page: {str(e)}", 500
+        # Fallback response
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Mystic Forest Flow</title>
+        </head>
+        <body>
+            <h1>Mystic Forest Flow</h1>
+            <p>Loading game...</p>
+            <script>
+                // Redirect to API test
+                fetch('/api/test')
+                    .then(response => response.json())
+                    .then(data => console.log('API Status:', data))
+                    .catch(error => console.error('API Error:', error));
+            </script>
+        </body>
+        </html>
+        """, 200
 
 @app.route('/health')
 def health_check():
-    return jsonify({"status": "healthy", "message": "Forest Adventure Game API is running"})
+    return jsonify({"status": "healthy", "message": "Mystic Forest Flow API is running"})
+
+@app.route('/api/test')
+def test_endpoint():
+    return jsonify({"message": "API is working", "timestamp": time.time()})
 
 @app.route('/<path:path>')
 def serve_static(path):
@@ -550,7 +573,8 @@ def get_current_state():
         session_id = request.cookies.get('session_id')
         if not session_id:
             # Generate a new session ID
-            session_id = hashlib.md5(f"{time.time()}-{os.urandom(8).hex()}".encode()).hexdigest()
+            import secrets
+            session_id = hashlib.md5(f"{time.time()}-{secrets.token_hex(8)}".encode()).hexdigest()
         
         # Get or create the user's game state
         if session_id in user_sessions and 'state' in user_sessions[session_id]:
@@ -683,8 +707,9 @@ def get_current_state():
         return response
         
     except Exception as e:
+        print(f"Error in get_current_state: {str(e)}")
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route('/api/choice', methods=['POST'])
 def make_choice():
@@ -805,7 +830,8 @@ def reset_game():
         session_id = request.cookies.get('session_id')
         if not session_id:
             # Generate a new session ID
-            session_id = hashlib.md5(f"{time.time()}-{os.urandom(8).hex()}".encode()).hexdigest()
+            import secrets
+            session_id = hashlib.md5(f"{time.time()}-{secrets.token_hex(8)}".encode()).hexdigest()
         
         # Reset the game state for this session
         reset_game_state(session_id)
