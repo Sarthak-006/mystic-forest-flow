@@ -1,6 +1,5 @@
 {
     "version": 2,
-    "name": "mystic-forest-flow",
     "builds": [
         {
             "src": "api/index.py",
@@ -14,11 +13,11 @@
     "routes": [
         {
             "src": "/api/(.*)",
-            "dest": "api/index.py"
+            "dest": "/api/index.py"
         },
         {
             "src": "/(.*)",
-            "dest": "public/$1"
+            "dest": "/public/$1"
         }
     ]
 }

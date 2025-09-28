@@ -1,3 +1,13 @@
+// Configuration
+const CONFIG = {
+    RETRY_DELAY: 30000, // 30 seconds retry delay (was 5000)
+    API_TIMEOUT: 15000, // 15 seconds API timeout
+    MAX_RETRIES: 3 // Maximum number of automatic retries
+};
+
+// Retry counter
+let retryCount = 0;
+
 const imageElement = document.getElementById('story-image');
 const situationElement = document.getElementById('situation-text');
 const choicesElement = document.getElementById('choices');
@@ -81,7 +91,7 @@ async function updateGameState() {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT);
 
         const response = await fetch('/api/state', {
             signal: controller.signal,
@@ -104,10 +114,23 @@ async function updateGameState() {
             throw new Error("Received empty response from server");
         }
 
+        // Reset retry count on successful load
+        retryCount = 0;
         renderState(data);
     } catch (error) {
         console.error("Error fetching game state:", error);
-        situationElement.textContent = `Error loading game state: ${error.message}. Retrying in 5 seconds...`;
+
+        // Show more specific error messages
+        let errorMessage = error.message;
+        if (error.message.includes('500')) {
+            errorMessage = 'Server error (500) - The game server is having issues. Please try again.';
+        } else if (error.message.includes('404')) {
+            errorMessage = 'API not found (404) - The game API is not responding.';
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMessage = 'Network error - Unable to connect to the game server.';
+        }
+
+        situationElement.textContent = `${errorMessage} Retrying in ${CONFIG.RETRY_DELAY / 1000} seconds...`;
 
         // Always show the reset button when there's an error
         choicesElement.innerHTML = '';
@@ -127,13 +150,37 @@ async function updateGameState() {
         refreshBtn.addEventListener('click', () => window.location.reload());
         resetContainer.appendChild(refreshBtn);
 
+        const retryBtn = document.createElement('button');
+        retryBtn.textContent = 'Retry Now';
+        retryBtn.className = 'reset-button';
+        retryBtn.style.marginLeft = '10px';
+        retryBtn.style.backgroundColor = '#10B981';
+        retryBtn.addEventListener('click', () => {
+            clearInterval(countdownInterval);
+            situationElement.textContent = "Retrying...";
+            updateGameState();
+        });
+        resetContainer.appendChild(retryBtn);
+
         choicesElement.appendChild(resetContainer);
 
-        // Auto-retry after 5 seconds
-        setTimeout(() => {
-            situationElement.textContent = "Attempting to reconnect...";
-            updateGameState();
-        }, 5000);
+        // Auto-retry with countdown using configuration
+        if (retryCount < CONFIG.MAX_RETRIES) {
+            let retryCountdown = CONFIG.RETRY_DELAY / 1000;
+            const countdownInterval = setInterval(() => {
+                retryCountdown--;
+                if (retryCountdown > 0) {
+                    situationElement.textContent = `${errorMessage} Retrying in ${retryCountdown} seconds... (${retryCount + 1}/${CONFIG.MAX_RETRIES})`;
+                } else {
+                    clearInterval(countdownInterval);
+                    retryCount++;
+                    situationElement.textContent = "Attempting to reconnect...";
+                    updateGameState();
+                }
+            }, 1000);
+        } else {
+            situationElement.textContent = `${errorMessage} Maximum retries reached. Please refresh the page or try again later.`;
+        }
     } finally {
         showLoading(false);
     }

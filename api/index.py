@@ -10,7 +10,14 @@ import traceback
 # from PIL import Image, ImageDraw # If doing manga server-side
 
 app = Flask(__name__)
-CORS(app, origins=["*"], methods=["GET", "POST", "OPTIONS"], allow_headers=["Content-Type", "Authorization"])  # Enable CORS for all routes
+CORS(app)  # Enable CORS for all routes
+
+# Add error handler for debugging
+@app.errorhandler(Exception)
+def handle_exception(e):
+    print(f"Unhandled exception: {e}")
+    traceback.print_exc()
+    return jsonify({"error": str(e)}), 500
 
 # --- Constants (Remove Pygame colors/fonts) ---
 POLLINATIONS_BASE_URL = "https://image.pollinations.ai/prompt/"
@@ -526,7 +533,11 @@ def get_node_details(node_id):
 @app.route('/')
 def serve_index():
     try:
-        return send_from_directory('../public', 'index.html')
+        # Try different path structures for Vercel
+        try:
+            return send_from_directory('public', 'index.html')
+        except:
+            return send_from_directory('../public', 'index.html')
     except Exception as e:
         print(f"Error serving index: {str(e)}")
         # Fallback response
@@ -540,11 +551,15 @@ def serve_index():
             <h1>Mystic Forest Flow</h1>
             <p>Loading game...</p>
             <script>
-                // Redirect to API test
+                // Test API endpoints
                 fetch('/api/test')
                     .then(response => response.json())
-                    .then(data => console.log('API Status:', data))
-                    .catch(error => console.error('API Error:', error));
+                    .then(data => {
+                        document.body.innerHTML = '<h1>API Test</h1><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    })
+                    .catch(error => {
+                        document.body.innerHTML = '<h1>API Error</h1><p>' + error + '</p>';
+                    });
             </script>
         </body>
         </html>
@@ -556,12 +571,21 @@ def health_check():
 
 @app.route('/api/test')
 def test_endpoint():
-    return jsonify({"message": "API is working", "timestamp": time.time()})
+    return jsonify({
+        "message": "API is working", 
+        "timestamp": time.time(),
+        "story_nodes_count": len(story_nodes),
+        "user_sessions_count": len(user_sessions)
+    })
 
 @app.route('/<path:path>')
 def serve_static(path):
     try:
-        return send_from_directory('../public', path)
+        # Try different path structures for Vercel
+        try:
+            return send_from_directory('public', path)
+        except:
+            return send_from_directory('../public', path)
     except Exception as e:
         print(f"Error serving static file {path}: {str(e)}")
         return f"Error serving file: {str(e)}", 404
@@ -569,6 +593,8 @@ def serve_static(path):
 @app.route('/api/state', methods=['GET'])
 def get_current_state():
     try:
+        print("API State endpoint called")
+        print(f"User sessions count: {len(user_sessions)}")
         # Get user's session ID from cookies or create a new one
         session_id = request.cookies.get('session_id')
         if not session_id:
@@ -925,4 +951,11 @@ def generate_share_image():
 # The file is usually named index.py inside an 'api' folder
 # If running locally:
 if __name__ == '__main__':
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    try:
+        print("Starting Mystic Forest Flow server...")
+        print(f"Story nodes loaded: {len(story_nodes)}")
+        print(f"User sessions initialized: {len(user_sessions)}")
+        app.run(debug=True, port=5000, host='0.0.0.0')
+    except Exception as e:
+        print(f"Failed to start server: {e}")
+        traceback.print_exc()
