@@ -13,7 +13,7 @@ An interactive text-based adventure game with AI-generated images and Flow block
 
 ## 🚀 Live Demo
 
-[Play the Game](https://your-vercel-url.vercel.app) | [View on GitHub](https://github.com/yourusername/mystic-forest-flow)
+[Play the Game](https://mystic-forest-flow.vercel.app/) | [View on GitHub](https://github.com/yourusername/mystic-forest-flow)
 
 ## 🎯 ETHGlobal Submission
 
