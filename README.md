@@ -1,4 +1,4 @@
-# 🌲 Mystic Forest Adventure - Flow Blockchain Game
+# 🌲 Mystic Forest Flow - Interactive Blockchain Adventure
 
 An interactive text-based adventure game with AI-generated images and Flow blockchain integration. Make choices that shape your destiny and save your story outcomes on the blockchain!
 
@@ -13,7 +13,7 @@ An interactive text-based adventure game with AI-generated images and Flow block
 
 ## 🚀 Live Demo
 
-[Play the Game](https://your-vercel-url.vercel.app) | [View on GitHub](https://github.com/yourusername/mystic-forest-adventure)
+[Play the Game](https://your-vercel-url.vercel.app) | [View on GitHub](https://github.com/yourusername/mystic-forest-flow)
 
 ## 🎯 ETHGlobal Submission
 
@@ -40,8 +40,8 @@ This project is built for **ETHGlobal New Delhi 2025** and targets the **Flow Fo
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/mystic-forest-adventure.git
-   cd mystic-forest-adventure
+   git clone https://github.com/yourusername/mystic-forest-flow.git
+   cd mystic-forest-flow
    ```
 
 2. **Install dependencies**
@@ -81,7 +81,7 @@ This project is built for **ETHGlobal New Delhi 2025** and targets the **Flow Fo
 ## 🏗️ Project Structure
 
 ```
-mystic-forest-adventure/
+mystic-forest-flow/
 ├── api/
 │   └── index.py              # Flask backend server
 ├── public/
@@ -172,7 +172,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you encounter any issues:
 
-1. Check the [Issues](https://github.com/yourusername/mystic-forest-adventure/issues) page
+1. Check the [Issues](https://github.com/yourusername/mystic-forest-flow/issues) page
 2. Create a new issue with detailed description
 3. Join the [ETHGlobal Discord](https://discord.gg/ethglobal) for help
 

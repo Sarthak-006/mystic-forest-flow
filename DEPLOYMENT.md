@@ -1,6 +1,6 @@
-# 🚀 Deployment Guide - Mystic Forest Adventure
+# 🚀 Deployment Guide - Mystic Forest Flow
 
-This guide will help you deploy your Forest Adventure Game to GitHub and Vercel.
+This guide will help you deploy your Mystic Forest Flow game to GitHub and Vercel.
 
 ## 📋 Prerequisites
 
@@ -21,7 +21,7 @@ git commit -m "Initial commit: Forest Adventure Game with Flow integration"
 ### 1.2 Create GitHub Repository
 1. Go to [GitHub.com](https://github.com)
 2. Click "New repository"
-3. Name it: `mystic-forest-adventure`
+3. Name it: `mystic-forest-flow`
 4. Make it public
 5. Don't initialize with README (we already have one)
 6. Click "Create repository"
@@ -29,7 +29,7 @@ git commit -m "Initial commit: Forest Adventure Game with Flow integration"
 ### 1.3 Push to GitHub
 ```bash
 # Add your GitHub repository as remote
-git remote add origin https://github.com/YOUR_USERNAME/mystic-forest-adventure.git
+git remote add origin https://github.com/YOUR_USERNAME/mystic-forest-flow.git
 
 # Push your code
 git branch -M main
@@ -42,7 +42,7 @@ git push -u origin main
 1. Go to [Vercel.com](https://vercel.com)
 2. Sign up/Login with GitHub
 3. Click "New Project"
-4. Import your `mystic-forest-adventure` repository
+4. Import your `mystic-forest-flow` repository
 5. Click "Import"
 
 ### 2.2 Configure Vercel
@@ -56,7 +56,7 @@ Vercel should auto-detect your configuration from `vercel.json`:
 ### 2.3 Deploy
 1. Click "Deploy"
 2. Wait for deployment to complete (2-3 minutes)
-3. You'll get a URL like: `https://mystic-forest-adventure-xxx.vercel.app`
+3. You'll get a URL like: `https://mystic-forest-flow-xxx.vercel.app`
 
 ## ✅ Step 3: Verify Deployment
 

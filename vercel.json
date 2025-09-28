@@ -1,5 +1,6 @@
 {
     "version": 2,
+    "name": "mystic-forest-flow",
     "builds": [
         {
             "src": "api/index.py",

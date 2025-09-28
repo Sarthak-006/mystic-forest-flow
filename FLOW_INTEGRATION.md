@@ -1,7 +1,7 @@
-# Flow Blockchain Integration for Forest Adventure Game
+# Flow Blockchain Integration for Mystic Forest Flow
 
 ## Overview
-This guide shows how to integrate your Forest Adventure Game with Flow blockchain to store story outcomes as on-chain data.
+This guide shows how to integrate your Mystic Forest Flow game with Flow blockchain to store story outcomes as on-chain data.
 
 ## Smart Contract Features
 
