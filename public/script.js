@@ -336,8 +336,50 @@ function displayEndScreen(data) {
         openShareModal(score, endingCategory);
     });
 
+    // Add Save to Blockchain button
+    const saveToBlockchainButton = document.createElement('button');
+    saveToBlockchainButton.textContent = 'Save to Blockchain';
+    saveToBlockchainButton.className = 'reset-button blockchain-button';
+    saveToBlockchainButton.style.backgroundColor = '#8B5CF6';
+    saveToBlockchainButton.style.marginLeft = '10px';
+
+    saveToBlockchainButton.addEventListener('click', async () => {
+        const storyData = {
+            endingCategory: endingCategory,
+            score: score,
+            imageUrl: data.image_url || '',
+            mangaImageUrl: data.manga_image_url || ''
+        };
+
+        const storyId = await saveStoryToBlockchain(storyData);
+        if (storyId) {
+            // Update button to show success
+            saveToBlockchainButton.textContent = `Saved! ID: ${storyId}`;
+            saveToBlockchainButton.style.backgroundColor = '#10B981';
+            saveToBlockchainButton.disabled = true;
+
+            // Show success message
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: #10B981; color: white; 
+                padding: 15px; border-radius: 8px; z-index: 10000; font-weight: bold;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            successMsg.textContent = `Story saved to blockchain with ID: ${storyId}`;
+            document.body.appendChild(successMsg);
+
+            // Remove success message after 5 seconds
+            setTimeout(() => {
+                if (document.body.contains(successMsg)) {
+                    document.body.removeChild(successMsg);
+                }
+            }, 5000);
+        }
+    });
+
     resetContainer.appendChild(resetButton);
     resetContainer.appendChild(shareButton);
+    resetContainer.appendChild(saveToBlockchainButton);
     endScreenElement.appendChild(resetContainer);
 
     // Fade in the end screen
@@ -577,3 +619,329 @@ async function resetGame() {
 
 // Initial load when the page loads
 document.addEventListener('DOMContentLoaded', updateGameState);
+
+// ===== FLOW BLOCKCHAIN INTEGRATION =====
+
+// Contract configuration
+const CONTRACT_ADDRESS = '0xafa6C385c1B6D26Fda55f1a576828B75E9F9FD6c';
+const CONTRACT_ABI = [
+    'function createStoryOutcome(string memory _endingCategory, uint256 _score, string memory _imageUrl, string memory _mangaImageUrl) public returns (uint256)',
+    'function getStoryOutcome(uint256 _storyId) public view returns (uint256 storyId, string memory endingCategory, uint256 score, string memory imageUrl, string memory mangaImageUrl, address player, uint256 timestamp)',
+    'function updateStoryImage(uint256 _storyId, string memory _newImageUrl) public',
+    'function getTotalStories() public view returns (uint256)',
+    'function storyExists(uint256 _storyId) public view returns (bool)',
+    'event StoryCreated(uint256 indexed storyId, address indexed player, string endingCategory, uint256 score)',
+    'event StoryUpdated(uint256 indexed storyId, string newImageUrl)'
+];
+
+let flowContract = null;
+let provider = null;
+
+// Initialize Flow blockchain connection
+async function initFlowBlockchain() {
+    try {
+        // Wait for ethers to be available
+        let attempts = 0;
+        while (typeof ethers === 'undefined' && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        if (typeof ethers === 'undefined') {
+            console.error('Ethers.js not loaded after 5 seconds. Please refresh the page.');
+            alert('Ethers.js library failed to load. Please refresh the page and try again.');
+            return false;
+        }
+
+        if (typeof window.ethereum !== 'undefined') {
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            flowContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+            console.log('Flow blockchain initialized successfully');
+            return true;
+        } else {
+            console.log('MetaMask not detected');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error initializing Flow blockchain:', error);
+        alert('Failed to initialize blockchain connection: ' + error.message);
+        return false;
+    }
+}
+
+// Flow Testnet Configuration (from official Flow docs)
+const FLOW_TESTNET_PARAMS = {
+    chainId: '0x221', // 545 in hex
+    chainName: 'Flow',
+    rpcUrls: ['https://testnet.evm.nodes.onflow.org'],
+    nativeCurrency: {
+        name: 'Flow',
+        symbol: 'FLOW',
+        decimals: 18,
+    },
+    blockExplorerUrls: ['https://evm-testnet.flowscan.io/']
+};
+
+// Check if user is connected to Flow network
+async function checkFlowNetwork() {
+    try {
+        if (!provider) return false;
+
+        const network = await provider.getNetwork();
+        const flowChainId = 545; // Flow testnet chain ID
+
+        if (network.chainId !== flowChainId) {
+            alert(`Please switch to Flow Testnet (Chain ID: ${flowChainId}). Current network: ${network.chainId}`);
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error('Error checking network:', error);
+        return false;
+    }
+}
+
+// Connect to MetaMask and Flow network
+async function connectToFlow() {
+    try {
+        if (!window.ethereum) {
+            alert('Please install MetaMask to use blockchain features');
+            return false;
+        }
+
+        // Request account access
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+        // Initialize provider
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        flowContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+
+        // Check if we're on the right network
+        const network = await provider.getNetwork();
+        const flowChainId = 545;
+
+        if (network.chainId !== flowChainId) {
+            // Try to switch to Flow testnet
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: FLOW_TESTNET_PARAMS.chainId }],
+                });
+            } catch (switchError) {
+                // If the network doesn't exist, add it
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [FLOW_TESTNET_PARAMS]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
+
+        console.log('Connected to Flow blockchain');
+        return true;
+    } catch (error) {
+        console.error('Error connecting to Flow:', error);
+        alert('Failed to connect to Flow blockchain: ' + error.message);
+        return false;
+    }
+}
+
+// Save story outcome to blockchain
+async function saveStoryToBlockchain(storyData) {
+    try {
+        if (!flowContract) {
+            const connected = await connectToFlow();
+            if (!connected) return null;
+        }
+
+        const signer = provider.getSigner();
+        const contractWithSigner = flowContract.connect(signer);
+
+        console.log('Saving story to blockchain:', storyData);
+
+        const tx = await contractWithSigner.createStoryOutcome(
+            storyData.endingCategory || 'Unknown Ending',
+            storyData.score || 0,
+            storyData.imageUrl || '',
+            storyData.mangaImageUrl || ''
+        );
+
+        console.log('Transaction submitted:', tx.hash);
+
+        // Show loading message
+        const loadingMsg = document.createElement('div');
+        loadingMsg.id = 'blockchain-loading';
+        loadingMsg.innerHTML = `
+            <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                        background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px; 
+                        z-index: 10000; text-align: center;">
+                <h3>Saving to Blockchain...</h3>
+                <p>Transaction: ${tx.hash}</p>
+                <p>Please wait for confirmation...</p>
+            </div>
+        `;
+        document.body.appendChild(loadingMsg);
+
+        // Wait for transaction to be mined
+        const receipt = await tx.wait();
+        console.log('Transaction confirmed in block:', receipt.blockNumber);
+
+        // Get the story ID from the event
+        const event = receipt.events.find(e => e.event === 'StoryCreated');
+        const storyId = event ? event.args.storyId : null;
+
+        // Remove loading message
+        document.body.removeChild(loadingMsg);
+
+        if (storyId) {
+            console.log('Story saved to blockchain with ID:', storyId.toString());
+            return storyId.toString();
+        } else {
+            throw new Error('Story ID not found in transaction receipt');
+        }
+    } catch (error) {
+        console.error('Error saving to blockchain:', error);
+
+        // Remove loading message if it exists
+        const loadingMsg = document.getElementById('blockchain-loading');
+        if (loadingMsg) {
+            document.body.removeChild(loadingMsg);
+        }
+
+        alert('Failed to save story to blockchain: ' + error.message);
+        return null;
+    }
+}
+
+// Get story from blockchain
+async function getStoryFromBlockchain(storyId) {
+    try {
+        if (!flowContract) {
+            const connected = await connectToFlow();
+            if (!connected) return null;
+        }
+
+        const story = await flowContract.getStoryOutcome(storyId);
+        console.log('Story retrieved from blockchain:', story);
+        return story;
+    } catch (error) {
+        console.error('Error getting story from blockchain:', error);
+        return null;
+    }
+}
+
+// Get total number of stories on blockchain
+async function getTotalStoriesOnBlockchain() {
+    try {
+        if (!flowContract) {
+            const connected = await connectToFlow();
+            if (!connected) return 0;
+        }
+
+        const total = await flowContract.getTotalStories();
+        console.log('Total stories on blockchain:', total.toString());
+        return total.toString();
+    } catch (error) {
+        console.error('Error getting total stories:', error);
+        return '0';
+    }
+}
+
+// Update connection status display
+function updateConnectionStatus(connected, account = null) {
+    const statusElement = document.getElementById('connection-status');
+    const connectButton = document.getElementById('connect-wallet');
+
+    if (connected && account) {
+        statusElement.textContent = `🟢 Connected: ${account.slice(0, 6)}...${account.slice(-4)}`;
+        statusElement.style.color = '#10B981';
+        connectButton.style.display = 'none';
+    } else if (connected) {
+        statusElement.textContent = '🟡 Connected';
+        statusElement.style.color = '#F59E0B';
+        connectButton.style.display = 'none';
+    } else {
+        statusElement.textContent = '🔴 Not Connected';
+        statusElement.style.color = '#EF4444';
+        connectButton.style.display = 'block';
+    }
+}
+
+// Handle connect wallet button
+document.addEventListener('DOMContentLoaded', () => {
+    const connectButton = document.getElementById('connect-wallet');
+    if (connectButton) {
+        connectButton.addEventListener('click', async () => {
+            const connected = await connectToFlow();
+            if (connected) {
+                const signer = provider.getSigner();
+                const account = await signer.getAddress();
+                updateConnectionStatus(true, account);
+            }
+        });
+    }
+});
+
+// Test MetaMask connectivity
+async function testMetaMaskConnection() {
+    try {
+        if (typeof window.ethereum === 'undefined') {
+            console.log('MetaMask not installed');
+            return { installed: false, connected: false };
+        }
+
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        const network = await window.ethereum.request({ method: 'eth_chainId' });
+
+        console.log('MetaMask status:', {
+            installed: true,
+            connected: accounts.length > 0,
+            accounts: accounts,
+            network: network
+        });
+
+        return {
+            installed: true,
+            connected: accounts.length > 0,
+            accounts: accounts,
+            network: network
+        };
+    } catch (error) {
+        console.error('MetaMask test failed:', error);
+        return { installed: false, connected: false, error: error.message };
+    }
+}
+
+// Initialize blockchain on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Initializing blockchain connection...');
+
+    // Test MetaMask first
+    const metaMaskStatus = await testMetaMaskConnection();
+    console.log('MetaMask status:', metaMaskStatus);
+
+    if (!metaMaskStatus.installed) {
+        updateConnectionStatus(false);
+        alert('MetaMask is not installed. Please install MetaMask to use blockchain features.');
+        return;
+    }
+
+    // Initialize Flow blockchain
+    const blockchainInitialized = await initFlowBlockchain();
+
+    if (blockchainInitialized && provider) {
+        try {
+            const signer = provider.getSigner();
+            const account = await signer.getAddress();
+            updateConnectionStatus(true, account);
+        } catch (error) {
+            console.log('Not connected to MetaMask, but blockchain is ready');
+            updateConnectionStatus(false);
+        }
+    } else {
+        updateConnectionStatus(false);
+    }
+});

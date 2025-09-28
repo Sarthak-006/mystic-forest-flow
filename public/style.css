@@ -509,6 +509,48 @@ body {
     position: relative;
     margin-bottom: 35px;
     text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.blockchain-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#connection-status {
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.connect-button {
+    background: linear-gradient(135deg, #8B5CF6, #A855F7);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.connect-button:hover {
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .footer-brand {
@@ -733,4 +775,26 @@ main {
     font-style: italic;
     margin-top: 10px;
     opacity: 0.8;
+}
+
+/* Blockchain button styling */
+.blockchain-button {
+    background: linear-gradient(135deg, #8B5CF6, #A855F7) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.blockchain-button:hover {
+    background: linear-gradient(135deg, #7C3AED, #9333EA) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4) !important;
+}
+
+.blockchain-button:disabled {
+    background: #10B981 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
